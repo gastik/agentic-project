@@ -28,6 +28,7 @@
 6. Implementation strategy
 7. Task decomposition
 8. Dependency graph
+8b. Task generation
 9. Requirement coverage gate
 10. Task readiness gate
 11. Development handoff

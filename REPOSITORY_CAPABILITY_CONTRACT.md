@@ -1,57 +1,61 @@
 # Repository Capability Contract
 
-This file is a template. Step 0 should populate it for the target repository.
+This contract defines the authorized capabilities, commands, and layout for the target repository to enforce safe and deterministic agentic operations.
 
 ## Repository identity
 
-- Repository:
-- Primary language(s):
-- Package manager(s):
-- Build system:
-- Runtime version(s):
+- Repository: LED Perimeter Advertising Platform
+- Primary language(s): TypeScript (Frontend), Python (Backend)
+- Package manager(s): npm (Node.js), pip (Python)
+- Build system: Next.js build system
+- Runtime version(s): Node.js 20+, Python 3.10+
 
 ## Canonical commands
 
 ### Install
 
-```text
-<command>
+```bash
+npm install
+pip install -r requirements.txt
 ```
 
 ### Build
 
-```text
-<command>
+```bash
+npm run build
 ```
 
 ### Test
 
-```text
-<command>
+```bash
+npm test
+pytest
 ```
 
 ### Lint
 
-```text
-<command>
+```bash
+npm run lint
+flake8 .
 ```
 
 ### Type check
 
-```text
-<command>
+```bash
+npx tsc --noEmit
+mypy .
 ```
 
 ### Documentation validation
 
 ```text
-<command>
+UNKNOWN
 ```
 
 ### Documentation generation
 
 ```text
-<command>
+UNKNOWN
 ```
 
 ## Repository layout
@@ -59,17 +63,21 @@ This file is a template. Step 0 should populate it for the target repository.
 | Path | Purpose | Writable by documentation agents |
 |---|---|---|
 | `docs/` | Project documentation | Yes |
+| `planning/` | Planning artifacts and orchestration | Yes |
 | `README.md` | Project entry documentation | If assigned |
-| `src/` | Application source | No |
-| `tests/` | Tests | No |
+| `frontend/` | Next.js application source | No |
+| `backend/` | Python backend source | No |
 
 ## Authoritative generated artifacts
 
-List generated documentation or schemas that must not be hand-edited.
+- `frontend/.next/` - Next.js build outputs
+- `planning/output/` - Automated planning artifacts
+- `__pycache__/` - Python compiled bytecode
 
 ## Forbidden operations
 
-List repository-specific commands or paths that documentation agents must not modify.
+- Modifying contents inside `frontend/.next/` or `node_modules/`.
+- Directly editing the `REPOSITORY_CAPABILITY_CONTRACT.md` without authorization.
 
 ## Notes
 

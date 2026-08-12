@@ -1,33 +1,73 @@
-# Project Documentation Pipeline
+# Agentic Planning and Documentation Pipeline
 
-This package defines an evidence-driven, agentic documentation pipeline designed to operate alongside a software development pipeline.
+This repository acts as the **"Brain"** for an agentic development lifecycle. It defines an automated, evidence-driven pipeline designed to ingest raw product ideas and output rigorously bounded, executable coding tasks and technical documentation. 
 
-## Core principles
+**CRITICAL RULE:** This repository is strictly for planning, orchestration, and documentation. **No product source code is implemented here.**
 
-- Documentation is treated as a first-class engineering artifact.
-- Repository state is the primary source of technical truth.
-- Documentation agents are read-only with respect to application/source code.
-- Technical claims must be supported by repository evidence.
-- Documentation drift must be detected explicitly.
-- Every documentation run produces an evidence manifest.
-- Commands, paths, interfaces, configuration keys, and examples must be validated before publication.
-- Development agents should emit a Documentation Impact Manifest that becomes an input to this pipeline.
+---
 
-## Pipeline stages
+## The Workflow
 
-1. Repository capability discovery
-2. Documentation inventory
-3. Documentation drift analysis
-4. Documentation impact analysis
-5. Documentation planning
-6. Specialist documentation agents
-7. Technical verification
-8. Documentation review
-9. Evidence gate
-10. Final documentation index
+The pipeline is split into two major lifecycles that run iteratively:
 
-See `PIPELINE.md` for the execution model.
+### 1. Planning Pipeline (`planning/`)
+Converts a raw product idea into atomic, testable, and explicitly bounded coding tasks (`T-XXX.md` files) that can be handed off to implementation coding agents.
+* **Workflow:** Idea Intake -> Spec Normalization -> Repo Discovery -> Gap Analysis -> Architecture Impact -> Implementation Strategy -> Task Decomposition -> Dependency Graph -> Task Generation -> Requirement Coverage -> Task Readiness -> Development Handoff.
 
-## Planning / Task Generation
+### 2. Documentation Pipeline
+Runs alongside or after software development to maintain the integrity of project documentation based on repository evidence.
+* **Workflow:** Inventory -> Drift Analysis -> Impact Analysis -> Doc Planning -> Specialist Writers -> Technical Verification -> Review.
 
-The package now includes an Idea -> Coding Tasks planning pipeline under `planning/`. It converts a documented idea into normalized requirements, repository gap analysis, architecture impact, implementation strategy, atomic coding-agent tasks, dependency DAG, requirement traceability, readiness gating, and development handoff.
+---
+
+## Directory & File Guide
+
+### Root Architecture & Contracts
+The root directory holds the global rules and contracts that bind the pipelines together.
+- `PIPELINE.md`: Defines the execution model and stages for the Documentation Pipeline.
+- `REPOSITORY_CAPABILITY_CONTRACT.md`: The single source of truth for the project's technology stack, build/test commands, and structural rules. Coding agents must obey this contract.
+- `DOCUMENTATION_*.md`: Various manifests and standards (Contract, Evidence, Impact, Standards) defining the quality bars and required evidence for any generated documentation.
+
+### The Orchestrator (`orchestrator/`)
+Contains the automated PowerShell scripts that invoke the Codex CLI to run the pipelines.
+- `orchestrator/orchestrate-planning.ps1`: The master script that sequentially runs the 11-stage planning pipeline, including parsing the Dependency Graph to loop through bulk task generation.
+- `orchestrator/codex-run-pipeline.ps1`: A generalized script for running any folder of agent prompts sequentially.
+- `orchestrator/codex-run-agent.ps1`: A utility to run a single ad-hoc agent.
+- `orchestrator/codex-run-doc-writer.ps1`: Invokes a specialist documentation writer, explicitly forbidding source code generation.
+- `orchestrator/codex-verify-docs.ps1`: Runs a read-only verification agent to ensure documentation claims match actual repo evidence.
+
+### The Planning Engine (`planning/`)
+The engine room for task generation. The framework stores the templates and agents here, but **generated artifacts are always saved to the Target Project** (e.g., your actual software repository), keeping this framework pure and reusable.
+- `PLANNING_PIPELINE.md` / `README.md`: Explains the stages of the planning pipeline.
+- `agents/`: Contains the precise LLM instructions (prompts) for each stage of the pipeline (e.g., `01-idea-intake.md`, `08b-task-generator.md`).
+- `templates/`: Houses standard templates like `CODING_TASK.md` to ensure uniform generation.
+- `schemas/`: Defines the data and event structures formulated during the planning phase.
+
+**Artifacts Generated in Target Project:**
+When the orchestrator runs, the following are generated *inside* your target project (e.g. `c:\projects\led\planning\`):
+- `output/`: Holds the intermediary artifacts generated by the agents (e.g., `IMPLEMENTATION_STRATEGY.md`, `TASK_DEPENDENCY_GRAPH.md`).
+- `tasks/`: The final output of the pipeline! Contains the atomic `T-XXX.md` implementation tasks ready for execution.
+- `EVIDENCE_MANIFEST.md`: The required cryptographic/hash proving that the planning phase passed all gates and is ready for handoff.
+
+---
+
+## How to Run
+To run the full Planning Pipeline, you must specify your target software project (where the Idea lives and where artifacts will be saved). 
+
+**Prerequisite:** Ensure you are authenticated with Codex first:
+```powershell
+codex login --device-auth
+```
+
+**Standard Execution:**
+For example, to run against the `led` project:
+```powershell
+.\orchestrator\orchestrate-planning.ps1 -TargetProject "c:\projects\led"
+```
+*(Ensure `c:\projects\led\planning\output\idea.md` exists before running!)*
+
+**Clean Execution:**
+If a previous run failed and you want to start fresh, use the `-Clean` flag. This will safely wipe the target project's `planning/tasks/` and `planning/output/` directories (preserving your `idea.md` input file) before executing:
+```powershell
+.\orchestrator\orchestrate-planning.ps1 -TargetProject "c:\projects\led" -Clean
+```
