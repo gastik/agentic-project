@@ -1,355 +1,709 @@
-# Cyclic Software Architecture Acceptance Review
+# Cyclic Software Architecture Review
 
 ## Purpose
 
-Use this skill to critically review a software architecture, migration plan, implementation strategy, or architectural design **against authoritative source requirements and actual repository evidence** until it reaches one of two explicit states:
+Use this skill to critically review a software architecture, architecture proposal, migration plan, modernization plan, system redesign, or implementation strategy through repeated review-and-rework cycles until it reaches one of two explicit states:
 
-- `GREEN` — critically accepted against the normative target.
-- `REWORK` — at least one critical semantic, architectural, migration, reliability, security, or acceptance-proof defect remains.
+- `GREEN` — the architecture is sufficiently coherent, implementable, safe, and evidenced for its stated purpose.
+- `REWORK` — one or more material architectural defects, contradictions, unsupported assumptions, or unproven acceptance conditions remain.
 
-This is not a style review and not a general architecture brainstorming exercise. The purpose is to prevent a plausible-looking design from being accepted when it has silently weakened, changed, omitted, or made unprovable a requirement.
+This is a **general software architecture review process**. It is not tied to one domain, one requirements format, or one particular architecture style.
 
-The review is **cyclic**:
-
-```text
-AUTHORITATIVE SOURCES
-        ↓
-Semantic requirements ledger
-        ↓
-Design / migration plan
-        ↓
-Critical acceptance review
-        ↓
-      GREEN? ─────────────── yes ──→ accepted
-        │
-        no
-        ↓
-Atomic REWORK packets
-        ↓
-Constrained revision
-        ↓
-Full regression review
-        ↺
-```
-
-A cycle must continue until `GREEN` is reached or execution is explicitly stopped because an authoritative-source ambiguity cannot be resolved without a human decision.
-
----
-
-# 1. When to use
-
-Use this skill when one or more of the following are true:
-
-- a current system must migrate to a richer target architecture;
-- multiple specifications, ADRs, requirements, prototypes, or recovered design artifacts define the target;
-- an existing repository is the factual current-state baseline;
-- semantic precision matters more than producing a quick architecture answer;
-- AI agents will later implement the resulting architecture;
-- the design contains safety, data-integrity, security, human-approval, audit, deterministic-output, or reliability invariants;
-- a previous design has been revised several times and semantic drift is a risk;
-- `GREEN` must mean something stronger than “looks reasonable”.
-
-Do not use this skill merely to generate first-pass architecture ideas. Create the design first, then use this skill to certify it.
-
----
-
-# 2. Required inputs
-
-The reviewer must identify these inputs before review begins.
-
-## 2.1 Normative target
-
-The authoritative specification of the desired system.
-
-Examples:
-
-- requirements specification;
-- architecture specification;
-- ADR set;
-- accepted design documents;
-- product/technical contract;
-- recovered artifact chain explicitly designated as target behavior.
-
-The normative target defines what **must eventually be true**.
-
-## 2.2 Current-state evidence
-
-The actual repository and its current authoritative documentation.
-
-Repository evidence outranks assumptions about the current system.
-
-Inspect implementation where a claim materially affects the migration design. Do not infer a capability from filenames, README wording, or an architectural intention if code or persistence constraints contradict it.
-
-## 2.3 Design under review
-
-The architecture, migration plan, phased plan, implementation strategy, or other artifact being accepted.
-
-## 2.4 Optional previously accepted review state
-
-If this is cycle 2 or later, include:
-
-- prior requirements ledger;
-- prior `REWORK` findings;
-- previously accepted semantics;
-- current cycle number;
-- prior design revision identifier/hash if available.
-
----
-
-# 3. Authority precedence
-
-Define precedence explicitly before reviewing.
-
-Default:
+The process is intentionally cyclic:
 
 ```text
-1. Normative target specification — desired-state authority.
-2. Current repository implementation — factual current-state authority.
-3. Current authoritative repository documentation — supporting current-state contract.
-4. Design under review — proposal only.
-5. Reviewer inference — never authoritative.
+REVIEW INPUTS
+    ↓
+Understand system and decision context
+    ↓
+Construct architectural view
+    ↓
+Critical architecture review
+    ↓
+  GREEN? ───────── yes ───────→ accepted
+    │
+    no
+    ↓
+Atomic REWORK findings
+    ↓
+Constrained architectural revision
+    ↓
+Full-system regression review
+    ↺
 ```
 
-Do not silently reconcile conflicts.
-
-If the target says `A` and the plan says `B`, the plan is wrong unless `B` is explicitly identified as a permitted design choice and does not violate `A`.
-
-If the plan says the current repository already implements `C`, verify `C` from repository evidence.
-
-If the target is genuinely ambiguous, record `SOURCE_AMBIGUITY` instead of inventing a requirement.
+Continue until `GREEN` is reached or a genuine unresolved business/technical decision requires human authority.
 
 ---
 
-# 4. Semantic requirements ledger
+# 1. Review philosophy
 
-Before judging the design, normalize the target into atomic requirements.
+The goal is not to ask whether an architecture is elegant or whether the reviewer personally prefers it.
 
-This ledger is the semantic checksum for every cycle.
+The goal is to determine whether the design:
 
-Each requirement should contain:
+- solves the stated problem;
+- fits the actual current system and constraints;
+- has clear component and responsibility boundaries;
+- has a coherent data and integration model;
+- satisfies the required quality attributes;
+- has explicit failure and recovery behavior;
+- can be deployed and operated safely;
+- can evolve without creating unacceptable lock-in or migration risk;
+- is testable and measurable;
+- has understood trade-offs;
+- is implementable by engineering teams or AI coding agents without guessing critical semantics.
+
+Architecture review must separate:
 
 ```text
-Requirement ID
-Normative statement
-MUST / SHOULD / MAY
-Source artifact
-Source section / location
-Interpretation notes
-Current-system evidence/status
-Criticality
+fact
+requirement
+constraint
+design decision
+assumption
+risk
+open question
 ```
+
+Do not silently convert one into another.
+
+---
+
+# 2. When to use
+
+Use this skill for:
+
+- new system architecture;
+- major subsystem design;
+- monolith → services changes;
+- service consolidation;
+- cloud or infrastructure migration;
+- data-platform redesign;
+- AI/LLM system architecture;
+- event-driven architecture;
+- storage or consistency-model changes;
+- security architecture changes;
+- replacement of a legacy subsystem;
+- phased modernization plans;
+- architecture produced by another AI agent;
+- architecture that will later be decomposed into implementation tasks.
+
+The process can review either:
+
+1. a **target architecture**, or
+2. a **migration from current architecture to target architecture**.
+
+---
+
+# 3. Required inputs
+
+The reviewer should gather as much of the following as exists.
+
+## 3.1 Problem and goals
+
+Understand:
+
+- what problem the system must solve;
+- primary users/actors;
+- business outcome;
+- required capabilities;
+- expected scale;
+- critical workflows;
+- important non-goals.
+
+If the problem statement is unclear enough that architectural correctness cannot be judged, record this as a blocking finding rather than inventing the goal.
+
+## 3.2 Current-state evidence
+
+When reviewing an existing system or migration, inspect the actual current state:
+
+- repository structure;
+- implementation;
+- database schema;
+- API contracts;
+- runtime topology;
+- deployment manifests;
+- tests;
+- operational documentation;
+- current ADRs;
+- known production constraints.
+
+Repository/runtime evidence outranks assumptions about what the system currently does.
+
+## 3.3 Proposed architecture
+
+The design under review may include:
+
+- architecture document;
+- diagrams;
+- ADRs;
+- phased migration plan;
+- component model;
+- data model;
+- API design;
+- operational model;
+- implementation strategy.
+
+## 3.4 Constraints
+
+Identify explicit constraints such as:
+
+- language/runtime;
+- cloud/platform;
+- data residency;
+- security/compliance;
+- latency;
+- throughput;
+- availability;
+- cost;
+- deployment model;
+- backward compatibility;
+- team capabilities;
+- migration downtime;
+- dependency restrictions.
+
+## 3.5 Authoritative sources when they exist
+
+Some projects have formal normative specifications, accepted ADRs, contracts, or regulatory requirements. Others do not.
+
+When authoritative sources exist, define precedence explicitly.
 
 Example:
 
 ```text
-REQ-ALIGN-006
-Normative statement:
-Global document order must not be a hard alignment invariant.
-Local monotonicity may be used only inside an established local region.
-
-Strength: MUST
-Source: target architecture §Alignment
-Criticality: Critical
-Current state: current validator enforces global monotonicity
+1. Accepted product/system requirements
+2. Accepted ADRs / architecture contract
+3. Current implementation for factual current-state behavior
+4. Proposed design
+5. Reviewer inference
 ```
 
-## 4.1 Preserve requirement strength
-
-Do not turn:
-
-- `MUST` into “recommended”, “prefer”, or “where practical”;
-- `MUST NOT` into “generally avoid”;
-- `SHOULD` into an unconditional hard requirement without identifying the strengthening as a `DESIGN_CHOICE`;
-- a local heuristic into a global invariant;
-- a global invariant into an implementation suggestion.
-
-## 4.2 Preserve semantic distinctions
-
-Pay particular attention to distinctions such as:
-
-```text
-alignment ≠ review ≠ export
-proposal state ≠ final disposition
-source identity ≠ source text
-retrieval representation ≠ authoritative evidence
-confidence score ≠ calibrated probability
-missing content ≠ intentionally non-runtime content
-semantic similarity ≠ structured equality
-review-required output ≠ finalized output
-checkpoint ≠ idempotency
-```
-
-Similar wording is not enough. Review semantic equivalence.
+Formal requirement traceability is useful in these projects, but it is **one review technique**, not the architecture-review process itself.
 
 ---
 
-# 5. Review dimensions
+# 4. Build the architecture model before judging it
 
-Every critical requirement must be checked against all relevant dimensions.
+Do not review isolated paragraphs.
 
-## 5.1 Data model
+Construct a coherent view of the proposed system.
 
-Can the proposed data model represent the requirement without lossy encoding or hidden assumptions?
+At minimum identify:
+
+```text
+Actors / clients
+System boundary
+Major components
+Responsibilities
+State owners
+Data stores
+External dependencies
+Synchronous interfaces
+Asynchronous interfaces
+Runtime/deployment units
+Security boundaries
+Failure boundaries
+Observability path
+Release/deployment path
+```
+
+For a migration also identify:
+
+```text
+Current architecture
+Target architecture
+Coexistence state
+Migration steps
+Compatibility boundaries
+Rollback path
+Cutover condition
+Legacy retirement condition
+```
+
+If these cannot be reconstructed from the design, that itself may be a finding.
+
+---
+
+# 5. Architecture review dimensions
+
+Review the design as a system. Use all dimensions that materially apply.
+
+---
+
+## 5.1 Problem fit and scope
+
+Ask:
+
+- Does the architecture solve the stated problem?
+- Are important user/system workflows covered end to end?
+- Is the architecture solving unrelated problems that increase complexity?
+- Are non-goals respected?
+- Does any major component exist without a clear requirement or operational reason?
+
+Reject architecture that is technically elaborate but does not clearly serve the intended outcome.
+
+---
+
+## 5.2 System boundaries and responsibility allocation
 
 Check:
+
+- clear ownership of responsibilities;
+- cohesion within components;
+- coupling between components;
+- duplicated business logic;
+- hidden orchestration;
+- circular dependencies;
+- unclear authority over state;
+- frontend/backend responsibility leakage;
+- business rules implemented in infrastructure adapters.
+
+A component should have a clear reason to change.
+
+---
+
+## 5.3 Domain and data model
+
+Check whether the model can represent all required states without lossy encoding or hidden assumptions.
+
+Review:
 
 - identity;
 - cardinality;
-- immutable vs mutable state;
-- revisioning;
-- provenance;
-- exact offsets/spans;
-- missing/extra/unresolved states;
-- relationships and invariants.
+- invariants;
+- state transitions;
+- immutable vs mutable data;
+- versioning;
+- temporal history;
+- ownership;
+- retention;
+- deletion semantics;
+- derived vs authoritative data.
 
-A plan does not support `N:1` merely because prose says it does if the database prevents legal target reuse.
+Do not accept prose-level capabilities that the persistence model cannot actually represent.
 
-## 5.2 Algorithm
+---
 
-Can the proposed algorithm actually produce the required behavior?
+## 5.4 Interfaces and contracts
 
-Check:
+Review:
 
-- hard constraints vs soft priors;
-- recovery behavior;
-- uncertainty;
-- no-forced-match behavior;
-- candidate generation;
-- reranking;
-- local/global order assumptions;
-- deterministic validation after probabilistic operations.
+- API boundaries;
+- commands vs queries;
+- synchronous vs asynchronous behavior;
+- schemas;
+- compatibility/versioning;
+- idempotency;
+- pagination/streaming where relevant;
+- error contracts;
+- retry semantics;
+- event contracts;
+- ownership of validation.
 
-## 5.3 Persistence
+Ask whether callers can use the system correctly without depending on undocumented behavior.
 
-Can state survive retries, restarts, revisions, human changes, and historical inspection?
+---
 
-Check:
-
-- immutable inputs;
-- append-only review history;
-- version binding;
-- last-known-good artifacts;
-- checkpoint identity;
-- idempotency keys;
-- stale-revision protection.
-
-## 5.4 API
-
-Can the API expose and enforce the required lifecycle?
+## 5.5 Integration architecture
 
 Check:
 
-- create/start behavior;
-- asynchronous state;
-- review mutations;
-- server-side authorization;
-- finalization gates;
-- retry/cancel semantics;
-- immutable historical versions.
+- external systems;
+- provider dependencies;
+- queues/event brokers;
+- databases;
+- third-party APIs;
+- filesystem/object storage;
+- identity providers;
+- model providers;
+- caching layers.
 
-## 5.5 UI / review workflow
-
-Can a user see and resolve every state the domain model permits?
-
-Check:
-
-- unresolved items;
-- missing/extra content;
-- evidence;
-- exact spans;
-- split/merge/relink;
-- approval/lock;
-- finalization blockers;
-- conflict handling.
-
-A backend-only `REVIEW_REQUIRED` flag does not satisfy a requirement for an in-product review workbench.
-
-## 5.6 Lifecycle and state transitions
-
-Check whether stages can publish an invalid later state prematurely.
-
-Examples:
-
-- `READY_FOR_REVIEW` must not publish before reconciliation if reconciliation is mandatory;
-- final artifact must not publish before finalization/preflight;
-- retries must not overwrite approved human state;
-- cancellation must not result in a false success.
-
-## 5.7 Validation
-
-Check whether deterministic validators prove all mandatory invariants around probabilistic steps.
-
-Examples:
-
-- exact-span validation;
-- protected-token validation;
-- structured category/value association validation;
-- source range validation;
-- syntax validation;
-- duplicate export identity detection.
-
-## 5.8 Failure behavior
-
-Ask what happens when the system cannot prove correctness.
-
-Preferred safety behavior is often:
+For each external dependency ask:
 
 ```text
-unresolved
-manual review
-blocked finalization
-last-known-good retained
-```
-
-Never accept a design that must force a match merely to produce output when the target permits `unresolved`.
-
-## 5.9 Provenance and auditability
-
-A critical automated decision should be explainable without rerunning the system.
-
-Check whether provenance includes all relevant versions and inputs, for example:
-
-```text
-input revisions/hashes
-extractor version
-classification version
-retrieval/window configuration
-embedding provider/model/version
-pivot representation/model when applicable
-candidate evidence
-reranker/scorer version
-alignment algorithm version
-LLM model
-prompt/schema version
-resolver invocation ID
-validator results/version
-review events
-exporter version
-artifact checksum
-security/provider configuration where normative
-```
-
-## 5.10 Acceptance-test sufficiency
-
-The test must prove the semantics, not merely execute code.
-
-Weak:
-
-```text
-Product X issue is detected.
-```
-
-Strong:
-
-```text
-Given the same numeric value set assigned to different category labels,
-the system emits a category/value mapping discrepancy and must not
-classify the section as equivalent merely because the numeric sets match.
+What happens when it is slow?
+What happens when it fails?
+What happens when it returns malformed data?
+What happens when it is unavailable for hours?
+Can the operation be retried safely?
 ```
 
 ---
 
-# 6. Verdict rules
+## 5.6 Consistency and transactional behavior
+
+Where state crosses components, inspect:
+
+- transaction boundaries;
+- partial failure;
+- eventual consistency;
+- duplicate delivery;
+- stale reads;
+- ordering assumptions;
+- optimistic/pessimistic concurrency;
+- compensating actions;
+- exactly-once assumptions;
+- idempotent replay.
+
+Do not accept distributed designs that depend on implicit atomicity across systems.
+
+---
+
+## 5.7 Reliability and failure behavior
+
+For each important workflow identify:
+
+```text
+success path
+expected failure path
+unexpected failure path
+retry path
+recovery path
+manual intervention path
+terminal state
+```
+
+Review:
+
+- fail-open vs fail-closed behavior;
+- durable checkpoints;
+- worker/process restart;
+- retries and backoff;
+- poison messages;
+- timeout handling;
+- partial progress;
+- last-known-good state;
+- disaster recovery;
+- backup/restore assumptions.
+
+A design is incomplete if it describes only the successful path.
+
+---
+
+## 5.8 Performance and scalability
+
+Review against expected scale rather than generic “scalability”.
+
+Ask:
+
+- expected request/job volume;
+- data volume;
+- concurrency;
+- latency targets;
+- throughput targets;
+- large-item behavior;
+- computational hotspots;
+- memory pressure;
+- database access pattern;
+- N+1 behavior;
+- fan-out;
+- queue depth;
+- model/API token or payload size;
+- horizontal/vertical scaling constraints.
+
+Require measurable performance assumptions where performance is material.
+
+---
+
+## 5.9 Security and privacy
+
+Review:
+
+- authentication;
+- authorization;
+- tenant isolation;
+- trust boundaries;
+- input validation;
+- secrets;
+- encryption;
+- executable/untrusted content;
+- injection paths;
+- SSRF/path traversal/deserialization risks;
+- dependency/provider data exposure;
+- retention/deletion;
+- audit events;
+- least privilege;
+- administrative override paths.
+
+Security controls must be introduced **before or with** the feature that requires them, not later in the roadmap.
+
+---
+
+## 5.10 Observability and operability
+
+The architecture must be diagnosable in production.
+
+Review:
+
+- structured logs;
+- metrics;
+- traces/correlation IDs;
+- health/readiness;
+- stage/job state;
+- error categorization;
+- operator dashboards;
+- alerting;
+- support diagnostics;
+- runbooks;
+- audit trails;
+- provenance where automated decisions matter.
+
+Ask:
+
+> Can an operator explain why this operation failed or produced this result without reproducing production manually?
+
+---
+
+## 5.11 Deployment and release architecture
+
+Review:
+
+- build artifacts;
+- environment configuration;
+- deployment topology;
+- migrations;
+- backward compatibility;
+- rolling deployment;
+- feature flags;
+- rollback;
+- zero/low-downtime needs;
+- version skew;
+- release gates;
+- immutable artifacts.
+
+For migrations, verify that a rollback path exists at every high-risk transition.
+
+---
+
+## 5.12 Evolution and maintainability
+
+Ask:
+
+- Can components evolve independently where intended?
+- Are interfaces stable enough?
+- Is there unnecessary framework/provider lock-in?
+- Are extension points explicit?
+- Is complexity proportional to the problem?
+- Are temporary migration structures clearly temporary?
+- Is legacy retirement defined?
+- Are multiple competing abstractions being introduced?
+
+Avoid both premature abstraction and architecture that can only support today’s exact case.
+
+---
+
+## 5.13 Testability and verification
+
+For every critical architectural claim ask:
+
+> How will we know this is true?
+
+Review the ability to test:
+
+- domain invariants;
+- component contracts;
+- database behavior;
+- concurrency;
+- failure recovery;
+- security boundaries;
+- integrations;
+- deployment behavior;
+- end-to-end workflows;
+- migration/cutover;
+- rollback;
+- performance limits.
+
+Acceptance criteria should prove the architecture's behavior rather than merely prove that code executed.
+
+---
+
+## 5.14 Cost and complexity
+
+Review:
+
+- infrastructure cost;
+- operational burden;
+- provider/API cost;
+- storage growth;
+- human review/operations cost;
+- complexity introduced per capability;
+- number of runtime services;
+- build/deploy complexity;
+- likely support burden.
+
+A more sophisticated architecture is not automatically better.
+
+---
+
+## 5.15 AI / probabilistic components, when applicable
+
+If the system uses LLMs, embeddings, classifiers, ranking, computer vision, or other probabilistic components, additionally review:
+
+- where probabilistic decisions are allowed;
+- deterministic boundaries around model output;
+- grounding/evidence requirements;
+- structured output validation;
+- model/provider abstraction;
+- prompt/model versioning;
+- evaluation datasets;
+- confidence calibration;
+- fallback/manual review;
+- hallucination containment;
+- data sent to providers;
+- retry behavior;
+- cost/token controls;
+- reproducibility/provenance.
+
+Never treat model confidence as system correctness without empirical calibration.
+
+---
+
+# 6. Architecture trade-off review
+
+Every significant architectural decision should expose its trade-off.
+
+For each major decision ask:
+
+```text
+Decision
+Why chosen
+Alternatives considered
+What this optimizes
+What this makes worse
+Operational consequences
+Migration consequences
+Reversal cost
+Evidence/assumption behind the decision
+```
+
+A design with no trade-offs is usually under-analyzed.
+
+Do not mark a legitimate trade-off as a defect merely because another design is possible.
+
+Mark it as a defect when:
+
+- the downside contradicts a required quality attribute;
+- the decision is based on a false current-state assumption;
+- the decision has no mitigation for a critical known risk;
+- a much simpler option satisfies the same constraints and the complexity has no justified benefit.
+
+---
+
+# 7. Migration review
+
+When the design is a migration, review each phase as a valid architecture state rather than only reviewing the final state.
+
+For every phase define:
+
+```text
+Entry assumptions
+Changes introduced
+Old/new coexistence model
+Data compatibility
+Traffic/workflow routing
+Operational behavior
+Failure behavior
+Rollback behavior
+Exit criteria
+```
+
+Check specifically for:
+
+- dual-write hazards;
+- schema compatibility;
+- old/new version coexistence;
+- partially migrated data;
+- replay/reprocessing;
+- immutable historical artifacts;
+- feature-flag ownership;
+- cutover authority;
+- rollback after data-shape change;
+- legacy retirement timing.
+
+A migration plan is `REWORK` if an intermediate phase violates a critical safety or correctness invariant even when the final design is sound.
+
+---
+
+# 8. Evidence and assumption discipline
+
+Every important architectural statement should be identifiable as one of:
+
+```text
+EVIDENCED FACT
+REQUIREMENT / CONSTRAINT
+DESIGN DECISION
+ASSUMPTION
+RISK
+OPEN QUESTION
+```
+
+## Evidenced fact
+
+Supported by repository, runtime, documentation, benchmark, measurement, or accepted source.
+
+## Design decision
+
+Chosen by the architecture. It must not be presented as an existing fact.
+
+## Assumption
+
+Potentially true but not yet proved. Material assumptions need validation or an explicit risk response.
+
+## Risk
+
+A known possible negative outcome requiring acceptance, mitigation, transfer, or avoidance.
+
+## Open question
+
+Cannot be resolved by architectural reasoning alone and requires authority/data outside the review.
+
+This classification prevents plausible prose from hiding uncertainty.
+
+---
+
+# 9. Findings
+
+Findings must be concrete and actionable.
+
+Use:
+
+```text
+ID
+Severity
+Category
+Architecture area / section
+Observed design
+Evidence
+Why it matters
+Required outcome
+Acceptance evidence required
+Must-not-regress constraints
+```
+
+Severity guidance:
+
+## CRITICAL
+
+Architecture cannot safely or correctly deliver the intended system, or violates a mandatory security/data-integrity constraint.
+
+## HIGH
+
+Major correctness, reliability, security, scalability, operability, or migration defect that must be resolved before acceptance.
+
+## MEDIUM
+
+Material design weakness that should be resolved or explicitly accepted with a documented trade-off.
+
+## LOW
+
+Minor architectural improvement; does not block `GREEN` unless the project's acceptance policy says otherwise.
+
+Do not create findings for style preferences.
+
+---
+
+# 10. Verdict rules
 
 Only two overall verdicts are allowed:
 
@@ -361,363 +715,339 @@ REWORK
 Do not use:
 
 - mostly green;
-- accepted with comments;
 - conditional green;
+- approved with comments;
 - partial pass;
-- reasonable.
+- looks good.
 
-## 6.1 GREEN
+## 10.1 GREEN
 
-`GREEN` is permitted only when all of the following are true:
+`GREEN` means:
 
-- every critical requirement is satisfied;
-- every critical requirement is traceable to an implementation mechanism;
-- every critical requirement is traceable to an acceptance test;
-- no semantic contradiction remains;
-- no migration phase temporarily violates a critical invariant;
-- current-state claims are supported by repository evidence;
-- no unresolved critical or high-severity `REWORK` finding remains;
-- previously accepted semantics have not regressed;
-- required mutation/adversarial cases are rejected correctly;
-- all mandatory release gates are preserved at their original normative strength.
+- the architecture solves the stated problem;
+- major system boundaries are coherent;
+- data ownership and state transitions are implementable;
+- important interfaces are sufficiently defined;
+- critical quality attributes are addressed;
+- critical failure modes have safe behavior;
+- security boundaries are adequate for the stated scope;
+- deployment/operations are credible;
+- migration phases are safe if applicable;
+- critical architecture claims are verifiable;
+- current-state assumptions used by the design are evidenced;
+- no unresolved `CRITICAL` or `HIGH` finding remains;
+- previous accepted semantics have not regressed;
+- adversarial re-review finds no new blocking defect.
 
-One unresolved critical semantic defect means `REWORK`.
+`GREEN` does **not** mean that every implementation detail is already designed.
 
-## 6.2 REWORK
+It means the architecture is sufficiently complete and consistent that implementation can proceed without teams inventing critical system behavior.
 
-Return `REWORK` when any of these is true:
+## 10.2 REWORK
 
-- requirement omitted;
-- requirement contradicted;
-- requirement weakened;
-- requirement strengthened without explicit design-choice classification;
-- current-system capability misrepresented;
-- proposed schema cannot express the behavior;
-- algorithm contradicts the requirement;
-- sequencing makes a required benchmark/calibration impossible;
-- migration temporarily breaks a critical invariant;
-- failure behavior can silently produce unsafe output;
-- security requirement is absent or deferred beyond the point it is needed;
-- provenance is insufficient to explain a final decision;
-- acceptance test would pass without proving the requirement;
-- previously accepted semantics regressed.
+Return `REWORK` when any blocking issue remains, including:
+
+- system goal not actually solved;
+- responsibility or state ownership ambiguity;
+- unrepresentable domain state;
+- contradictory interfaces;
+- unsafe failure behavior;
+- invalid consistency assumption;
+- unsupported scalability assumption;
+- missing security boundary;
+- unoperable deployment model;
+- unsafe migration phase;
+- unverifiable critical behavior;
+- design based on false current-state assumptions;
+- critical requirement omitted where formal requirements exist;
+- architecture complexity without a justified purpose that materially increases risk.
+
+One unresolved `CRITICAL` defect is sufficient for `REWORK`.
 
 ---
 
-# 7. Atomic REWORK packets
+# 11. Rework process
 
-Do not respond to a failure with “improve the plan”.
+Do not tell a rework agent merely to “improve the architecture”.
 
-Each finding must be an atomic correction contract.
-
-Use this schema:
-
-```text
-ID
-Severity: CRITICAL | HIGH | MEDIUM | LOW
-Requirement IDs violated
-Exact design section
-Observed wording/design
-Why it is semantically or architecturally incorrect
-Required semantic correction
-Required acceptance test
-Sections/invariants that MUST NOT change as collateral damage
-Evidence supporting the finding
-```
+Each blocking finding becomes a bounded rework contract.
 
 Example:
 
 ```text
-AR-017 — CRITICAL
+AR-007 — HIGH
 
-Requirements:
-REQ-ALIGN-006
-REQ-ALIGN-007
+Category:
+Reliability / state ownership
 
 Section:
-Phase 3 — Candidate alignment
+Background processing
 
 Observed design:
-The plan retains one global forward target cursor and allows occasional
-exceptions.
+The API writes a job row, publishes a queue message, and assumes only one
+worker will process that job.
 
-Why incorrect:
-The normative target says global order is not an invariant. A forward
-cursor with exceptions still makes global monotonicity the base model.
+Why it matters:
+The broker is at-least-once. Duplicate delivery can execute the operation
+twice and produce conflicting artifacts.
 
-Required correction:
-1. Remove global target cursor as an alignment invariant.
-2. Introduce region-level anchors.
-3. Permit region permutation.
-4. Retain monotonicity only inside established regions.
+Required outcome:
+Define processing ownership and idempotent replay semantics. Duplicate
+message delivery must converge on one authoritative job result.
 
-Required acceptance test:
-A source region ordering A,B,C must correctly align to target regions C,A,B
-without classifying A or B as missing.
+Acceptance evidence:
+Inject duplicate delivery and worker restart during processing. The system
+must not produce duplicate authoritative outputs or contradictory terminal
+states.
 
-Must not change:
-- tenant/job vector isolation;
-- bounded candidate sets;
-- exact-span grounding.
+Must not regress:
+Existing retry semantics and historical job auditability.
 ```
 
----
-
-# 8. Constrained rework
-
-The rework agent receives:
-
-- current plan;
-- full requirements ledger;
-- all open REWORK packets;
-- all previously accepted semantics marked `MUST_NOT_REGRESS`.
-
-Its task is **not** to redesign freely.
-
-It must:
-
-1. correct each REWORK finding;
-2. preserve unrelated accepted semantics;
-3. add/strengthen acceptance evidence required by the finding;
-4. identify any unavoidable collateral change explicitly;
-5. produce a new revision rather than overwriting the prior review record.
-
-The reviewer must not assume the rework was correct because the requested text was added. Re-evaluate the complete design.
+The rework agent must fix the required outcome while preserving previously accepted behavior.
 
 ---
 
-# 9. Full regression review after every cycle
+# 12. Full-system re-review after every cycle
 
-After rework, review the **entire artifact again**.
+After rework, review the **entire architecture again**, not only modified sections.
 
-Do not review only changed sections.
-
-Each cycle must rerun:
+Each cycle should repeat:
 
 ```text
-1. Full requirements-ledger traceability
-2. Semantic-equivalence review
-3. Data-model review
-4. Algorithm review
-5. Persistence/lifecycle review
-6. API/UI review
-7. Failure/safety review
-8. Security review
-9. Provenance/audit review
-10. Acceptance-test sufficiency review
-11. Regression check against previously accepted semantics
-12. Adversarial/mutation pass
+1. Problem-fit review
+2. System-boundary review
+3. Data/state review
+4. Interface/integration review
+5. Consistency/concurrency review
+6. Reliability/failure review
+7. Performance/scalability review
+8. Security/privacy review
+9. Operability/observability review
+10. Deployment/release review
+11. Maintainability/evolution review
+12. Testability/acceptance review
+13. Migration review when applicable
+14. Regression review against previously accepted decisions
+15. Adversarial pass
 ```
 
-A fix in an alignment phase may invalidate assumptions in review or export. Whole-artifact review prevents local fixes from creating downstream semantic drift.
+A local fix can create a new defect elsewhere. Whole-system re-review is what makes the process cyclic rather than a list of independent comments.
 
 ---
 
-# 10. Semantic mutation testing
+# 13. Adversarial review before GREEN
 
-For critical requirements, create plausible incorrect interpretations and confirm that the review rejects them.
+Before final acceptance, run one pass whose explicit purpose is to invalidate the candidate architecture.
 
-Example normative requirement:
+Ask questions such as:
 
-```text
-The LLM selects exact existing target spans.
-```
+- Which component has ambiguous ownership?
+- What happens if every external dependency becomes unavailable?
+- Which operation is assumed to be atomic but is not?
+- What happens on duplicate requests or duplicate messages?
+- What happens during partial deployment/version skew?
+- Can stale data overwrite newer state?
+- Can retries create duplicate side effects?
+- Can one tenant/user access another's data?
+- What happens at 10x the expected load?
+- What grows without bound?
+- What cannot be diagnosed from production telemetry?
+- Which failure requires a manual database correction?
+- Which migration phase cannot be rolled back?
+- Which design statement is actually an unverified assumption?
+- Which architecture claim has no acceptance test or measurement?
+- Which mechanism is more complex than the problem requires?
 
-Mutations that MUST cause `REWORK`:
-
-```text
-The LLM may lightly normalize selected translation text.
-
-The LLM may synthesize a target string when no candidate is sufficiently good.
-
-Exact target text only needs to be preserved after final approval.
-```
-
-Other useful architectural mutations:
-
-```text
-MUST → SHOULD
-local heuristic → global invariant
-unresolved state → forced best match
-review approval → LLM confidence threshold
-derived retrieval pivot → authoritative evidence
-immutable extracted text → reviewer-mutated source record
-finalization preflight → post-publication warning
-replay checkpoint → assumed idempotency
-```
-
-The mutation suite is a test of the **review process itself**.
+If a new `CRITICAL` or `HIGH` finding appears, return to `REWORK`.
 
 ---
 
-# 11. Adversarial reviewer pass
+# 14. Optional formal traceability
 
-Before final `GREEN`, perform an adversarial pass whose only objective is to invalidate the candidate `GREEN` verdict.
+Formal requirement traceability is recommended when the project has:
 
-The adversarial reviewer should ask:
+- regulatory requirements;
+- contractual requirements;
+- a normative architecture specification;
+- safety-critical behavior;
+- a large migration specification;
+- multiple competing source documents;
+- AI agents that need precise implementation contracts.
 
-- What requirement was technically mentioned but not implementably supported?
-- Which `MUST` became advisory language?
-- Which acceptance test can pass while the required semantics are still wrong?
-- Is a current repository capability being assumed rather than evidenced?
-- Is an immutable record accidentally mutable?
-- Is a global/local distinction blurred?
-- Can a low-confidence case still be forced through?
-- Can a human-approved state be overwritten by retry/reprocessing?
-- Can final output be published without every authoritative gate?
-- Is a security control introduced after the phase that already needs it?
-- Can provenance explain the decision without rerunning AI?
+In those cases, maintain a requirement-to-architecture-to-test matrix.
 
-Any new critical/high finding returns the cycle to `REWORK`.
+Example:
 
----
+| Requirement | Architecture mechanism | Component/phase | Acceptance evidence | Status |
+|---|---|---|---|---|
+| R-001 | ... | ... | ... | PASS |
 
-# 12. Traceability matrix
-
-Before `GREEN`, produce a matrix with no blank critical rows.
-
-Recommended columns:
-
-| Requirement | Normative source | Current-state evidence | Design phase/component | Implementation mechanism | Acceptance test | Result |
-|---|---|---|---|---|---|---|
-| REQ-... | target §... | repo path / absent | Phase ... | ... | ... | PASS |
-
-For every critical requirement:
-
-```text
-requirement
-→ design mechanism
-→ implementation location/boundary
-→ acceptance test
-```
-
-must be visible.
+This is an **optional assurance mechanism**. Do not make the entire review process depend on a requirements ledger when the project does not need one.
 
 ---
 
-# 13. Cycle ledger
+# 15. Cycle history
 
-Keep a permanent record of each iteration.
+Keep a compact permanent record of review cycles.
 
 Example:
 
 ```text
 Cycle 1
 Verdict: REWORK
-Critical/high findings: 16
+Critical/high findings: 11
 
 Cycle 2
 Verdict: REWORK
-Resolved: all Cycle-1 findings
-New full-regression findings: 5
-Regressions: none
+Resolved: 11
+New findings from whole-system regression: 3
+Regressions: 0
 
 Cycle 3
-Verdict: REWORK
-Resolved: Cycle-2 findings
-Remaining precision findings: 3
-
-Cycle 4
 Verdict: GREEN
 Open critical/high findings: 0
-Requirement traceability: complete
-Adversarial pass: passed
-Mandatory mutation cases: passed
+Adversarial pass: PASS
 ```
 
-For each cycle record:
+Record at minimum:
 
 ```text
 cycle number
-design revision/hash
-review input revisions
+architecture revision/hash
+review scope
 verdict
-open findings
 resolved findings
 new findings
 regressions
-source ambiguities
+open decisions
 adversarial result
 ```
 
-Never erase earlier REWORK findings. They are evidence of how acceptance was reached.
+Do not erase previous findings. The history explains how architectural acceptance was reached.
 
 ---
 
-# 14. Execution roles
+# 16. Execution roles
 
-For stronger independence, separate roles when possible.
+The process can be performed by one capable reviewer, but stronger independence comes from separate roles.
+
+Recommended roles:
 
 ```text
-Agent A — Semantic Extractor
-Normative target → requirements ledger
+Architecture Reviewer
+- reconstructs the system
+- performs full review
+- issues GREEN/REWORK
 
-Agent B — Critical Reviewer
-Requirements + repository evidence + design → GREEN/REWORK
+Rework Architect
+- receives blocking findings
+- revises the design
+- must preserve accepted decisions
 
-Agent C — Rework Agent
-Only open REWORK contracts + accepted invariants → revised design
-
-Agent B — Full Reviewer again
-Full revised design → GREEN/REWORK
-
-Agent D — Adversarial Reviewer
-Candidate GREEN → attempt to invalidate acceptance
+Adversarial Reviewer
+- tries to invalidate the candidate GREEN result
+- does not optimize or redesign unless reporting a defect
 ```
 
-If one model performs multiple roles, reset the task framing between roles and require explicit source/evidence grounding. Do not let “I wrote this design” become evidence that it is correct.
+Optional specialists may review:
+
+```text
+Security
+Data architecture
+Reliability/SRE
+Performance
+AI/ML
+Cloud/infrastructure
+Compliance/privacy
+```
+
+The final architecture reviewer remains responsible for system-level coherence across specialist findings.
 
 ---
 
-# 15. Canonical critical-review prompt
+# 17. Expected review artifacts
 
-Use or adapt the following prompt for the review stage.
+A complete cyclic architecture review should produce:
+
+## A. Architecture review report
 
 ```text
-You are the critical acceptance reviewer for a software architecture.
+Scope
+System summary
+Current-state facts where applicable
+Key design decisions
+Quality-attribute assessment
+Trade-offs
+Findings
+Overall verdict
+```
 
-Your task is NOT to improve the design unless the verdict is REWORK.
-Your task is to determine whether the proposed design faithfully,
-completely and implementably reaches the normative target semantics.
+## B. Rework findings
 
-AUTHORITATIVE INPUT PRECEDENCE
+Atomic blocking findings with required outcomes and evidence.
 
-1. Normative target specification — desired-state authority.
-2. Current repository implementation — factual current-state authority.
-3. Current authoritative repository documentation — supporting evidence.
-4. Design under review — proposal only.
+## C. Revised architecture
 
-You must not silently reconcile conflicts.
+A new revision of the design, not an overwritten review history.
 
-SEMANTIC RULES
+## D. Cycle history
 
-- Preserve MUST, SHOULD and MAY distinctions.
-- Do not weaken a target requirement.
-- Do not strengthen a requirement unless explicitly classified DESIGN_CHOICE.
-- Do not infer that the current repository implements a feature without evidence.
-- Similar wording is not sufficient; check semantic equivalence.
-- Distinguish global invariants from local heuristics.
-- Distinguish alignment, review, and export where applicable.
-- Treat missing/extra/unresolved as legitimate states where the target does.
-- Do not accept a design that can force an answer merely because output is required.
-- Probabilistic output must remain grounded in immutable evidence where the target requires it.
-- Final publication must follow the target's deterministic authority rules.
+Every REWORK/GREEN decision and its findings.
 
-REVIEW EVERY REQUIREMENT AGAINST
+## E. Optional traceability matrix
 
-1. Data model
-2. Algorithm
-3. Persistence
-4. API
-5. UI/review workflow
-6. Lifecycle/state transitions
-7. Validation
-8. Failure behavior
-9. Security
-10. Provenance/auditability
-11. Acceptance tests
+Only when the project requires formal requirement-level assurance.
 
-VERDICT
+---
+
+# 18. Canonical architecture reviewer prompt
+
+```text
+You are the critical software architecture reviewer.
+
+Your task is to determine whether the architecture is coherent,
+implementable, safe, operable, and sufficient for its stated problem.
+
+Do not redesign the system unless the verdict is REWORK.
+Do not mark preferences as defects.
+Do not assume current-system behavior without evidence.
+Do not silently resolve contradictions or missing decisions.
+
+First understand:
+- the problem and goals;
+- current architecture, when relevant;
+- proposed architecture;
+- constraints;
+- major workflows;
+- quality attributes.
+
+Then review the architecture across all materially relevant dimensions:
+
+1. problem fit and scope
+2. component boundaries and responsibilities
+3. domain/data model
+4. interfaces and contracts
+5. integrations and dependencies
+6. consistency/concurrency/transactions
+7. reliability and failure behavior
+8. performance and scalability
+9. security and privacy
+10. observability and operability
+11. deployment and release model
+12. evolution and maintainability
+13. testability and acceptance evidence
+14. migration safety, when applicable
+15. cost and complexity
+16. probabilistic/AI boundaries, when applicable
+
+For important statements distinguish:
+FACT
+REQUIREMENT/CONSTRAINT
+DESIGN DECISION
+ASSUMPTION
+RISK
+OPEN QUESTION
 
 Return exactly one overall verdict:
 
@@ -725,183 +1055,116 @@ GREEN
 or
 REWORK
 
-GREEN is permitted only when:
-- every critical requirement is satisfied;
-- every critical requirement has an implementation mechanism;
-- every critical requirement has an acceptance test sufficient to prove it;
-- no semantic contradiction remains;
-- no migration phase temporarily violates a critical invariant;
-- current-state claims are repository-evidenced;
-- there are no regressions from previously accepted requirements;
-- the adversarial/mutation pass finds no critical/high defect.
+GREEN is allowed only when no unresolved CRITICAL or HIGH architectural
+finding remains and the architecture is sufficiently defined that
+implementation can proceed without inventing critical behavior.
 
-If REWORK, produce atomic findings.
-
-For each finding provide:
+If REWORK, produce atomic findings with:
 
 ID
 Severity
-Requirement IDs violated
-Exact design section
-Observed wording/design
-Why it is semantically or architecturally incorrect
-Required semantic correction
-Required acceptance test
-Sections/invariants that MUST NOT change as collateral damage
-Supporting evidence
+Category
+Architecture section
+Observed design
+Evidence
+Why it matters
+Required outcome
+Acceptance evidence required
+Must-not-regress constraints
 
-After rework, review the ENTIRE design again, not only modified sections.
+After rework, review the complete architecture again, not only the changed
+sections.
 
-Never issue GREEN because a design is generally reasonable.
-GREEN means critically accepted against the normative target.
+Before issuing GREEN, perform an adversarial pass whose purpose is to find
+a blocking reason the architecture should not be accepted.
 ```
 
 ---
 
-# 16. Rework-agent prompt
+# 19. Canonical rework prompt
 
 ```text
-You are the constrained architecture rework agent.
+You are the architecture rework agent.
 
 Inputs:
-- normative requirements ledger;
-- current design revision;
-- open REWORK packets;
-- previously accepted semantics marked MUST_NOT_REGRESS.
+- the current architecture document;
+- blocking architecture-review findings;
+- known current-system evidence;
+- accepted design decisions that must not regress.
 
-Your task is to correct every open REWORK packet without freely redesigning
-unrelated accepted architecture.
+Your task is to resolve the findings with the smallest coherent
+architectural change that satisfies the required outcomes.
 
-For every REWORK packet:
-1. apply the required semantic correction;
-2. add or strengthen the required acceptance test;
-3. preserve every listed MUST_NOT_CHANGE invariant;
-4. report any unavoidable collateral effect explicitly.
+Do not perform a free redesign.
+Do not change unrelated accepted decisions unless required for consistency.
+Do not hide an unresolved issue behind vague wording.
+Do not convert assumptions into facts.
 
-Do not mark findings resolved yourself.
-Only the critical reviewer may issue GREEN.
+For every finding:
+1. identify affected architecture areas;
+2. make the required architectural correction;
+3. propagate consequences through data, APIs, runtime, security,
+   reliability, operations, migration and testing as applicable;
+4. add concrete acceptance evidence;
+5. preserve must-not-regress constraints;
+6. record any new trade-off or open decision introduced by the change.
 
-Produce a new design revision and a change log mapping each REWORK ID to
-its corrected section.
+Produce a new architecture revision for full re-review.
 ```
 
 ---
 
-# 17. Stop conditions
+# 20. Stop conditions
 
-Continue cycling automatically while:
+The cycle normally stops only on `GREEN`.
 
-- verdict is `REWORK`;
-- findings are actionable from available sources;
-- rework does not require a missing human product decision.
+Stop without GREEN only when a blocking question cannot be resolved from available evidence and requires an authoritative decision, for example:
 
-Stop without `GREEN` only when:
+- contradictory business goals;
+- unknown compliance requirement;
+- unavailable production-scale data needed to choose a design;
+- undecided consistency/availability trade-off owned by the business;
+- missing authority over data retention or provider usage;
+- two mutually incompatible requirements with no precedence.
+
+Record:
 
 ```text
-SOURCE_AMBIGUITY
-AUTHORITATIVE_CONFLICT
-MISSING_REQUIRED_SOURCE
-HUMAN_POLICY_DECISION_REQUIRED
+BLOCKED_ARCHITECTURE_DECISION
+Question
+Why architecture cannot decide it safely
+Available options
+Trade-offs
+Required decision owner
+Affected findings
 ```
 
-In that case, report the exact blocked requirement and decision needed.
-
-Do not fabricate a target semantic merely to finish the cycle.
+Do not fabricate the answer merely to force GREEN.
 
 ---
 
-# 18. Required outputs
+# 21. Proven cyclic pattern
 
-A complete architecture-cycle run should produce at least:
-
-```text
-REQUIREMENTS_LEDGER.md
-ARCHITECTURE_REVIEW_CYCLES.md
-TRACEABILITY_MATRIX.md
-<design>.accepted.md        # only after GREEN
-```
-
-Optional but recommended:
+A useful pattern for architecture work is:
 
 ```text
-SEMANTIC_MUTATION_CASES.md
-REWORK_PACKETS/
-ADVERSARIAL_REVIEW.md
-EVIDENCE_MANIFEST.md
-```
-
-The final accepted artifact should identify:
-
-- normative source versions/hashes;
-- repository commit/ref used for current-state evidence;
-- final design revision/hash;
-- cycle count;
-- final verdict;
-- remaining non-critical design choices or deferred optimizations.
-
----
-
-# 19. Method proven in the Overlay → TOME002 review
-
-This template is based on the cyclic review method used to validate a phased migration from an existing Overlay application to a richer TOME002 target architecture.
-
-The execution pattern was:
-
-```text
-1. Freeze source precedence:
-   target specification → normative;
-   existing repository → factual current state;
-   migration plan → proposal.
-
-2. Review semantics rather than prose similarity.
-
-3. Cycle 1 returned REWORK with 16 atomic critical/high findings.
-
-4. Rework was constrained to those findings while preserving accepted
-   architecture such as deterministic export, human authority, exact-span
-   grounding, and current safety substrate.
-
-5. The full design was re-reviewed, not only modified sections.
-
-6. Cycle 2 returned REWORK with a smaller set of operational/contract gaps.
-
-7. Cycle 3 returned REWORK with remaining precision defects.
-
-8. A final adversarial pass found one last weak conditional requirement;
-   it was corrected before acceptance.
-
-9. Cycle 4 returned GREEN only after the full requirement ledger,
-   reliability/security requirements, data-model invariants, mandatory
-   regression cases, and hard automation gates each had an implementation
-   mechanism and sufficient acceptance evidence.
-```
-
-The important lesson is that the number of findings decreasing across cycles is **not** the acceptance criterion.
-
-Acceptance occurred only when:
-
-```text
-open critical/high semantic defects = 0
-AND
-critical requirement traceability = complete
-AND
-full regression review = pass
-AND
-adversarial pass = pass
-```
-
-This is the defining behavior of the skill.
-
----
-
-# 20. Completion condition
-
-The architecture-cycle task is complete only when either:
-
-```text
+Review candidate architecture
+        ↓
+REWORK findings
+        ↓
+Bounded revision
+        ↓
+Whole-system re-review
+        ↓
+New findings caused by deeper inspection
+        ↓
+Bounded revision
+        ↓
+Adversarial final pass
+        ↓
 GREEN
 ```
 
-has been issued under the rules above, or execution has stopped with an explicit authoritative-source/human-decision blocker.
+A real review may require several cycles. That is expected.
 
-A shrinking REWORK list, a high-quality design, passing implementation tests, or reviewer confidence is not a substitute for `GREEN` semantic acceptance.
+The value of the process is not the number of findings in the first pass. The value is that each cycle reduces unresolved architectural risk **without losing previously accepted system behavior**, and that `GREEN` is reached only after the complete architecture survives a fresh critical review.
